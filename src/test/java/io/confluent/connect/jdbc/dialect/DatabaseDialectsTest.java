@@ -78,9 +78,9 @@ public class DatabaseDialectsTest {
 
   @Test
   public void shouldFindSqlServerDialect() {
-    assertDialect(SqlServerDatabaseDialect.class, "jdbc:sqlserver://localhost;user=Me");
-    assertDialect(SqlServerDatabaseDialect.class, "jdbc:microsoft:sqlserver://localhost;user=Me");
-    assertDialect(SqlServerDatabaseDialect.class, "jdbc:jtds:sqlserver://localhost;user=Me");
+    assertDialect(CustomSqlServerDatabaseDialect.class, "jdbc:sqlserver://localhost;user=Me");
+    assertDialect(CustomSqlServerDatabaseDialect.class, "jdbc:microsoft:sqlserver://localhost;user=Me");
+    assertDialect(CustomSqlServerDatabaseDialect.class, "jdbc:jtds:sqlserver://localhost;user=Me");
   }
 
   @Test
