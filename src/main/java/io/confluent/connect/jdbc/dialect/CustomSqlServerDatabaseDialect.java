@@ -323,37 +323,36 @@ public class CustomSqlServerDatabaseDialect extends GenericDatabaseDialect {
       Collection<ColumnId> nonKeyColumns
   ) {
     ExpressionBuilder builder = expressionBuilder();
-    builder.append("merge into ");
+    builder.append("BEGIN TRANSACTION;");
+    builder.append("UPDATE ");
     builder.append(table);
-    builder.append(" AS target using (select ");
+    builder.append(" SET ");
     builder.appendList()
            .delimitedBy(", ")
-           .transformedBy(ExpressionBuilder.columnNamesWithPrefix("? AS "))
-           .of(keyColumns, nonKeyColumns);
-    builder.append(") AS incoming on (");
-    builder.appendList()
-           .delimitedBy(" and ")
-           .transformedBy(this::transformAs)
-           .of(keyColumns);
-    builder.append(")");
-    if (nonKeyColumns != null && !nonKeyColumns.isEmpty()) {
-      builder.append(" when matched then update set ");
+           .transformedBy(ExpressionBuilder.columnNamesWith(" = ?"))
+           .of(nonKeyColumns);
+    if (!keyColumns.isEmpty()) {
+      builder.append(" WHERE ");
       builder.appendList()
-             .delimitedBy(",")
-             .transformedBy(this::transformUpdate)
-             .of(nonKeyColumns);
+              .delimitedBy(" AND ")
+              .transformedBy(ExpressionBuilder.columnNamesWith(" = ?"))
+              .of(keyColumns);
     }
-    builder.append(" when not matched then insert (");
+
+
+    builder.append("; IF (@@ROWCONT=0) INSERT INTO ");
+    builder.append(table);
+    builder.append("(");
     builder.appendList()
-           .delimitedBy(", ")
-           .transformedBy(ExpressionBuilder.columnNames())
-           .of(nonKeyColumns, keyColumns);
-    builder.append(") values (");
-    builder.appendList()
-           .delimitedBy(",")
-           .transformedBy(ExpressionBuilder.columnNamesWithPrefix("incoming."))
-           .of(nonKeyColumns, keyColumns);
-    builder.append(");");
+            .delimitedBy(",")
+            .transformedBy(ExpressionBuilder.columnNames())
+            .of(keyColumns, nonKeyColumns);
+    builder.append(") VALUES(");
+    builder.appendMultiple(",", "?", keyColumns.size() + nonKeyColumns.size());
+    builder.append(")");
+
+    builder.append("; COMMIT TRANSACTION;");
+
     return builder.toString();
   }
 
